@@ -2,36 +2,47 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import os
-import pymysql
-pymysql.install_as_MySQLdb()
+# import pymysql   # ❌ Inutile pour SQLite
+# pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# ==============================
+# SECURITY
+# ==============================
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = True
+
+# ==============================
+# CORS
+# ==============================
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:3000", 
+    "http://localhost:3000",
 ]
-SECRET_KEY = config("SECRET_KEY")
 
-DEBUG = True
-
-
-
-# Custom user model
+# ==============================
+# CUSTOM USER
+# ==============================
 AUTH_USER_MODEL = "api.User"
 
+# ==============================
+# MEDIA FILES
+# ==============================
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880 
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 MAX_IMAGE_WIDTH = 800
 MAX_IMAGE_HEIGHT = 800
 
-#expiration token 
+# ==============================
+# JWT CONFIG
+# ==============================
 SIMPLE_JWT = {
-    'USER_ID_FIELD': 'id',  
+    'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     "ACCESS_TOKEN_LIFETIME": timedelta(days=364),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=364),
@@ -40,9 +51,11 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
     "TOKEN_BLACKLIST_ENABLED": True,
-
 }
 
+# ==============================
+# APPLICATIONS
+# ==============================
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -50,31 +63,43 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken', 
+    'rest_framework.authtoken',
     'django_rest_passwordreset',
     'rest_framework_simplejwt',
+
     'api',
     'releveNote',
     'CertificatScolarite',
     'Attestation',
-    'Scolarite'
+    'Scolarite',
 ]
 
+# ==============================
+# MIDDLEWARE
+# ==============================
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',      # Garde seulement une fois
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ==============================
+# URLS / WSGI
+# ==============================
 ROOT_URLCONF = 'gestion_papier_scolarite.urls'
+WSGI_APPLICATION = 'gestion_papier_scolarite.wsgi.application'
 
+# ==============================
+# TEMPLATES
+# ==============================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -90,16 +115,17 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'gestion_papier_scolarite.wsgi.application'
-# REST FRAMEWORK CONFIGURATION
+# ==============================
+# REST FRAMEWORK
+# ==============================
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (                
-        'rest_framework_simplejwt.authentication.JWTAuthentication', 
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication'       
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',   
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -107,51 +133,45 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
     ],
 }
-# Database configuration avec postgresql
+
+# ==============================
+# DATABASE (SQLite TEMPORAIRE)
+# ==============================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Projet_fin_de_vancances_2025',
-        'USER': 'postgres',
-        'PASSWORD': 'herlin',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-
+# ==============================
+# PASSWORD VALIDATORS
+# ==============================
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
+# ==============================
+# INTERNATIONALIZATION
+# ==============================
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
+# ==============================
+# STATIC FILES
+# ==============================
 STATIC_URL = 'static/'
-
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+# ==============================
+# EMAIL CONFIG
+# ==============================
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
 EMAIL_PORT = config("EMAIL_PORT", cast=int)
@@ -160,7 +180,9 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
 
-
+# ==============================
+# SECURITY (DEV)
+# ==============================
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_SECURE = False  
+CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
