@@ -22,12 +22,14 @@ urlpatterns = [
     
     # Liste des étudiants
     path('etudiants/', EtudiantListView.as_view(), name='etudiant-list'),
-    
+
+    # Profil de l'étudiant connecté
+    path('etudiant/me/', EtudiantDetailView.as_view(), name='etudiant-me'),    
+
     # Détails étudiant (GET, PUT, DELETE)
     path('etudiant/<int:pk>/', EtudiantDetailView.as_view(), name='etudiant-detail'),
     
-    # Profil de l'étudiant connecté
-    path('etudiant/me/', EtudiantDetailView.as_view(), name='etudiant-me'),
+
 
     path('accounts/', include(('django.contrib.auth.urls', 'accounts'))),
     path('auth/', include(('django.contrib.auth.urls', 'auth'))),

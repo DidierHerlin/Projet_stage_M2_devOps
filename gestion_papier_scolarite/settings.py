@@ -7,11 +7,14 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+
 # ==============================
 # SECURITY
 # ==============================
 SECRET_KEY = config("SECRET_KEY")
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 # ==============================
 # CORS
@@ -138,9 +141,13 @@ REST_FRAMEWORK = {
 # DATABASE (SQLite TEMPORAIRE)
 # ==============================
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('MYSQL_DATABASE', default='ecole_db'),
+        'USER': config('MYSQL_USER', default='ecole_user'),
+        'PASSWORD': config('MYSQL_PASSWORD', default='secret123'),
+        'HOST': config('DB_HOST', default='db'),
+        'PORT': config('DB_PORT', default='3306'),
     }
 }
 
@@ -166,6 +173,7 @@ USE_TZ = True
 # STATIC FILES
 # ==============================
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
