@@ -12,12 +12,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.core.mail import send_mail
-from rest_framework_simplejwt.authentication import JWTAuthentication
 import logging
 
 from .serializers import (
-    EtudiantSerializer, 
-    ScolariteSerializer, 
+    EtudiantSerializer,
+    ScolariteSerializer,
     UserSerializer,
     UserUpdateSerializer,
     UpdateProfilePhotoSerializer,
@@ -25,7 +24,7 @@ from .serializers import (
     PasswordResetCodeVerificationSerializer,
     PasswordResetConfirmSerializer
 )
-from .models import Etudiant, Scolarite, User
+from .models import Etudiant, User
 from gestion_papier_scolarite.utils.token_utils import generate_reset_token, get_token_expiration
 
 logger = logging.getLogger(__name__)
@@ -38,19 +37,19 @@ logger = logging.getLogger(__name__)
 class LoginView(APIView):
     """Connexion utilisateur"""
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
-        
+
         if not email or not password:
             return Response({
                 'success': False,
                 'error': 'Email et mot de passe requis'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         user = authenticate(request, email=email, password=password)
-        
+
         if user:
             auth_login(request, user)
             serializer = UserSerializer(user, context={'request': request})
@@ -59,7 +58,7 @@ class LoginView(APIView):
                 'message': 'Connexion réussie',
                 'user': serializer.data
             }, status=status.HTTP_200_OK)
-        
+
         return Response({
             'success': False,
             'error': 'Email ou mot de passe incorrect'
@@ -69,7 +68,7 @@ class LoginView(APIView):
 class LogoutView(APIView):
     """Déconnexion utilisateur"""
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         auth_logout(request)
         return Response({
@@ -86,35 +85,43 @@ class EtudiantRegisterView(APIView):
     """Inscription des étudiants"""
     permission_classes = [AllowAny]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    
+
     def post(self, request):
-        logger.info(f"Tentative d'inscription étudiant: {request.data.get('email')}")
-        
-        serializer = EtudiantSerializer(data=request.data, context={'request': request})
-        
+        logger.info(
+            f"Tentative d'inscription étudiant: {
+                request.data.get('email')}")
+
+        serializer = EtudiantSerializer(
+            data=request.data, context={
+                'request': request})
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():
                     etudiant = serializer.save()
-                
-                logger.info(f"Étudiant créé avec succès: {etudiant.user.email}")
-                
+
+                logger.info(
+                    f"Étudiant créé avec succès: {
+                        etudiant.user.email}")
+
                 return Response({
                     'success': True,
                     'message': 'Inscription réussie',
                     'data': EtudiantSerializer(etudiant, context={'request': request}).data
                 }, status=status.HTTP_201_CREATED)
-                
+
             except Exception as e:
-                logger.error(f"Erreur lors de la création de l'étudiant: {str(e)}")
+                logger.error(
+                    f"Erreur lors de la création de l'étudiant: {
+                        str(e)}")
                 return Response({
                     'success': False,
                     'error': 'Erreur lors de la création du compte',
                     'details': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
         logger.warning(f"Validation échouée: {serializer.errors}")
-        
+
         return Response({
             'success': False,
             'error': 'Données invalides',
@@ -128,17 +135,21 @@ class ScolariteRegisterView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
-        logger.info(f"Tentative d'inscription scolarité: {request.data.get('email')}")
-        
-        serializer = ScolariteSerializer(data=request.data, context={'request': request})
-        
+        logger.info(
+            f"Tentative d'inscription scolarité: {
+                request.data.get('email')}")
+
+        serializer = ScolariteSerializer(
+            data=request.data, context={
+                'request': request})
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():
                     scolarite = serializer.save()
-                
+
                 logger.info(f"Compte scolarité créé: {scolarite.user.email}")
-                
+
                 return Response({
                     'success': True,
                     'message': 'Compte scolarité créé avec succès',
@@ -148,7 +159,7 @@ class ScolariteRegisterView(APIView):
                         'fonction': scolarite.fonction
                     }
                 }, status=status.HTTP_201_CREATED)
-                
+
             except Exception as e:
                 logger.error(f"Erreur création scolarité: {str(e)}")
                 return Response({
@@ -158,7 +169,7 @@ class ScolariteRegisterView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         logger.warning(f"Validation scolarité échouée: {serializer.errors}")
-        
+
         return Response({
             'success': False,
             'error': 'Données invalides',
@@ -186,7 +197,7 @@ class EtudiantDetailView(APIView):
                     'success': False,
                     'error': 'Accès refusé. Réservé à la scolarité.'
                 }, status=status.HTTP_403_FORBIDDEN)
-            
+
             etudiant = get_object_or_404(Etudiant, pk=pk)
         else:
             # Accès à son propre profil
@@ -200,7 +211,7 @@ class EtudiantDetailView(APIView):
                         'message': 'Vous êtes connecté en tant que scolarité',
                         'user': UserSerializer(request.user, context={'request': request}).data
                     }, status=status.HTTP_200_OK)
-                
+
                 return Response({
                     'success': False,
                     'error': 'Profil étudiant non trouvé'
@@ -231,23 +242,23 @@ class EtudiantDetailView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = EtudiantSerializer(
-            etudiant, 
-            data=request.data, 
+            etudiant,
+            data=request.data,
             partial=True,
             context={'request': request}
         )
-        
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():
                     etudiant_updated = serializer.save()
-                
+
                 return Response({
                     'success': True,
                     'message': 'Profil mis à jour avec succès',
                     'data': EtudiantSerializer(etudiant_updated, context={'request': request}).data
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Erreur mise à jour étudiant: {str(e)}")
                 return Response({
@@ -283,14 +294,14 @@ class EtudiantDetailView(APIView):
             with transaction.atomic():
                 etudiant.delete()
                 user.delete()
-            
+
             logger.info(f"Étudiant supprimé: {user.email}")
-            
+
             return Response({
                 'success': True,
                 'message': 'Étudiant supprimé avec succès'
             }, status=status.HTTP_204_NO_CONTENT)
-            
+
         except Exception as e:
             logger.error(f"Erreur suppression étudiant: {str(e)}")
             return Response({
@@ -303,17 +314,19 @@ class EtudiantDetailView(APIView):
 class EtudiantListView(APIView):
     """Liste de tous les étudiants (scolarité uniquement)"""
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         if request.user.role != 'scolarite':
             return Response({
                 'success': False,
                 'error': 'Accès refusé. Réservé à la scolarité.'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         etudiants = Etudiant.objects.select_related('user').all()
-        serializer = EtudiantSerializer(etudiants, many=True, context={'request': request})
-        
+        serializer = EtudiantSerializer(
+            etudiants, many=True, context={
+                'request': request})
+
         return Response({
             'success': True,
             'count': etudiants.count(),
@@ -349,17 +362,17 @@ class UpdateUserProfileView(APIView):
             partial=True,
             context={'request': request}
         )
-        
+
         if serializer.is_valid():
             try:
                 user = serializer.save()
-                
+
                 return Response({
                     'success': True,
                     'message': 'Profil mis à jour avec succès',
                     'user': UserSerializer(user, context={'request': request}).data
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Erreur mise à jour profil: {str(e)}")
                 return Response({
@@ -367,7 +380,7 @@ class UpdateUserProfileView(APIView):
                     'error': 'Erreur lors de la mise à jour',
                     'details': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
         return Response({
             'success': False,
             'error': 'Données invalides',
@@ -382,25 +395,25 @@ class UpdateProfilePhotoView(APIView):
 
     def post(self, request):
         serializer = UpdateProfilePhotoSerializer(data=request.data)
-        
+
         if serializer.is_valid():
             try:
                 user = request.user
-                
+
                 # Supprimer l'ancienne photo si elle existe
                 if user.photo_profil:
                     user.photo_profil.delete(save=False)
-                
+
                 # Mettre à jour avec la nouvelle photo
                 user.photo_profil = serializer.validated_data['photo_profil']
                 user.save()
-                
+
                 return Response({
                     'success': True,
                     'message': 'Photo de profil mise à jour avec succès',
                     'user': UserSerializer(user, context={'request': request}).data
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Erreur mise à jour photo: {str(e)}")
                 return Response({
@@ -408,7 +421,7 @@ class UpdateProfilePhotoView(APIView):
                     'error': 'Erreur lors de la mise à jour de la photo',
                     'details': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
         return Response({
             'success': False,
             'error': 'Données invalides',
@@ -422,21 +435,21 @@ class DeleteProfilePhotoView(APIView):
 
     def delete(self, request):
         user = request.user
-        
+
         if not user.photo_profil:
             return Response({
                 'success': False,
                 'error': 'Aucune photo de profil à supprimer'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             user.photo_profil.delete(save=True)
-            
+
             return Response({
                 'success': True,
                 'message': 'Photo de profil supprimée avec succès'
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.error(f"Erreur suppression photo: {str(e)}")
             return Response({
@@ -453,13 +466,13 @@ class ChangePasswordView(APIView):
     def post(self, request):
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
-        
+
         if not current_password or not new_password:
             return Response({
                 'success': False,
                 'error': 'Mot de passe actuel et nouveau mot de passe requis'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         serializer = UserUpdateSerializer(
             request.user,
             data={
@@ -469,18 +482,18 @@ class ChangePasswordView(APIView):
             partial=True,
             context={'request': request}
         )
-        
+
         if serializer.is_valid():
             try:
                 serializer.save()
-                
+
                 logger.info(f"Mot de passe changé pour: {request.user.email}")
-                
+
                 return Response({
                     'success': True,
                     'message': 'Mot de passe changé avec succès'
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Erreur changement mot de passe: {str(e)}")
                 return Response({
@@ -488,7 +501,7 @@ class ChangePasswordView(APIView):
                     'error': 'Erreur lors du changement de mot de passe',
                     'details': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
         return Response({
             'success': False,
             'error': 'Validation échouée',
@@ -505,22 +518,22 @@ class RequestPasswordResetView(APIView):
     """Étape 1 : Demande de réinitialisation - Envoie un code par email"""
     permission_classes = [AllowAny]
     authentication_classes = []
-   
+
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response({
                 'success': False,
                 'error': 'Email invalide',
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         email = serializer.validated_data['email']
-        
+
         try:
             user = User.objects.get(email=email)
-            
+
             # Générer le token
             token = generate_reset_token()
             expiration = get_token_expiration()
@@ -550,14 +563,14 @@ L'équipe de gestion""",
                     recipient_list=[email],
                     fail_silently=False,
                 )
-                
+
                 logger.info(f"Code de réinitialisation envoyé à: {email}")
-                
+
                 return Response({
                     'success': True,
                     'message': 'Code envoyé par email avec succès'
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Erreur envoi email: {str(e)}")
                 return Response({
@@ -565,9 +578,10 @@ L'équipe de gestion""",
                     'error': 'Erreur lors de l\'envoi de l\'email',
                     'details': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
+
         except User.DoesNotExist:
-            # Pour des raisons de sécurité, on peut renvoyer un message générique
+            # Pour des raisons de sécurité, on peut renvoyer un message
+            # générique
             return Response({
                 'success': False,
                 'error': 'Aucun compte associé à cet email'
@@ -579,46 +593,46 @@ class VerifyResetCodeView(APIView):
     """Étape 2 : Vérification du code"""
     permission_classes = [AllowAny]
     authentication_classes = []
-    
+
     def post(self, request):
         serializer = PasswordResetCodeVerificationSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response({
                 'success': False,
                 'error': 'Données invalides',
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         email = serializer.validated_data['email']
         code = serializer.validated_data['code']
 
         try:
             user = User.objects.get(email=email)
-            
+
             if not user.reset_token:
                 return Response({
                     'success': False,
                     'error': 'Aucun code de réinitialisation trouvé'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             if user.reset_token != code:
                 return Response({
                     'success': False,
                     'error': 'Code incorrect'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             if user.reset_token_expiration < timezone.now():
                 return Response({
                     'success': False,
                     'error': 'Le code a expiré. Veuillez demander un nouveau code'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             return Response({
                 'success': True,
                 'message': 'Code valide'
             }, status=status.HTTP_200_OK)
-            
+
         except User.DoesNotExist:
             return Response({
                 'success': False,
@@ -631,51 +645,51 @@ class ResetPasswordView(APIView):
     """Étape 3 : Réinitialisation finale du mot de passe"""
     permission_classes = [AllowAny]
     authentication_classes = []
-    
+
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
-        
+
         if not serializer.is_valid():
             return Response({
                 'success': False,
                 'error': 'Données invalides',
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         email = serializer.validated_data['email']
         code = serializer.validated_data['code']
         new_password = serializer.validated_data['new_password']
 
         try:
             user = User.objects.get(email=email)
-            
+
             if not user.reset_token or user.reset_token != code:
                 return Response({
                     'success': False,
                     'error': 'Code invalide'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             if user.reset_token_expiration < timezone.now():
                 return Response({
                     'success': False,
                     'error': 'Le code a expiré'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Changer le mot de passe
             user.set_password(new_password)
-            
+
             # Supprimer le token
             user.reset_token = None
             user.reset_token_expiration = None
             user.save()
-            
+
             logger.info(f"Mot de passe réinitialisé pour: {email}")
-            
+
             return Response({
                 'success': True,
                 'message': 'Mot de passe réinitialisé avec succès'
             }, status=status.HTTP_200_OK)
-            
+
         except User.DoesNotExist:
             return Response({
                 'success': False,

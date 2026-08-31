@@ -12,20 +12,22 @@ def get_user_full_name(user):
     else:
         return user.email
 
-# 1. CRÉATION DE DEMANDE 
+# 1. CRÉATION DE DEMANDE
+
+
 class CertificatScolariteCreateSerializer(serializers.ModelSerializer):
     etudiant = serializers.PrimaryKeyRelatedField(
         queryset=Etudiant.objects.all(),
         required=False,
         write_only=True
     )
-    
+
     date_naissance = serializers.DateField(
         required=False,
         allow_null=True,
         input_formats=['%d/%m/%Y', '%Y-%m-%d']
     )
-    
+
     lieu_naissance = serializers.CharField(
         required=False,
         allow_null=True,
@@ -40,7 +42,11 @@ class CertificatScolariteCreateSerializer(serializers.ModelSerializer):
             'nom_pere', 'nom_mere', 'date_naissance', 'lieu_naissance',
             'quantite', 'statut', 'date_demande', 'date_traitement'
         ]
-        read_only_fields = ['id_certificat', 'statut', 'date_demande', 'date_traitement']
+        read_only_fields = [
+            'id_certificat',
+            'statut',
+            'date_demande',
+            'date_traitement']
 
     def validate(self, data):
         if not data.get('nom_pere') or data.get('nom_pere') == "Non spécifié":
@@ -51,13 +57,13 @@ class CertificatScolariteCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"nom_mere": "Le nom de la mère est obligatoire."}
             )
-        
+
         quantite = data.get('quantite', 1)
         if not (1 <= quantite <= 10):
             raise serializers.ValidationError(
                 {"quantite": "La quantité doit être comprise entre 1 et 10 exemplaires."}
             )
-        
+
         date_naissance = data.get('date_naissance')
         if date_naissance:
             from django.utils import timezone
@@ -65,7 +71,7 @@ class CertificatScolariteCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"date_naissance": "La date de naissance ne peut pas être dans le futur."}
                 )
-        
+
         return data
 
     def to_representation(self, instance):
@@ -76,24 +82,26 @@ class CertificatScolariteCreateSerializer(serializers.ModelSerializer):
             "statut": instance.get_statut_display(),
             "date_demande": instance.date_demande.strftime("%d/%m/%Y à %H:%M"),
             "etudiant": {
-                "nom_complet": get_user_full_name(instance.etudiant.user),
-                "immatricule": instance.etudiant.immatricule
-            },
+                "nom_complet": get_user_full_name(
+                    instance.etudiant.user),
+                "immatricule": instance.etudiant.immatricule},
             "details": {
                 "nom_pere": instance.nom_pere,
                 "nom_mere": instance.nom_mere,
                 "quantite": instance.quantite,
                 "date_naissance": instance.date_naissance.strftime("%d/%m/%Y") if instance.date_naissance else None,
-                "lieu_naissance": instance.lieu_naissance
-            }
-        }
+                "lieu_naissance": instance.lieu_naissance}}
 
-# 2. LISTE et DÉTAIL 
+# 2. LISTE et DÉTAIL
+
+
 class CertificatScolariteListSerializer(serializers.ModelSerializer):
     etudiant_nom = serializers.SerializerMethodField()
-    immatricule = serializers.CharField(source='etudiant.immatricule', read_only=True)
+    immatricule = serializers.CharField(
+        source='etudiant.immatricule', read_only=True)
     email = serializers.CharField(source='etudiant.user.email', read_only=True)
-    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+    statut_display = serializers.CharField(
+        source='get_statut_display', read_only=True)
     peut_etre_retire = serializers.SerializerMethodField()
     date_naissance_formatted = serializers.SerializerMethodField()
     date_demande_formatted = serializers.SerializerMethodField()
@@ -103,13 +111,24 @@ class CertificatScolariteListSerializer(serializers.ModelSerializer):
     class Meta:
         model = CertificatScolarite
         fields = [
-            'id', 'id_certificat', 'etudiant_nom', 'immatricule', 'email',
-            'nom_pere', 'nom_mere', 'date_naissance', 'date_naissance_formatted',
-            'lieu_naissance', 'quantite', 'statut', 'statut_display',
-            'date_demande', 'date_demande_formatted',
-            'date_traitement', 'date_traitement_formatted',
-            'peut_etre_retire'
-        ]
+            'id',
+            'id_certificat',
+            'etudiant_nom',
+            'immatricule',
+            'email',
+            'nom_pere',
+            'nom_mere',
+            'date_naissance',
+            'date_naissance_formatted',
+            'lieu_naissance',
+            'quantite',
+            'statut',
+            'statut_display',
+            'date_demande',
+            'date_demande_formatted',
+            'date_traitement',
+            'date_traitement_formatted',
+            'peut_etre_retire']
 
     def get_etudiant_nom(self, obj):
         return get_user_full_name(obj.etudiant.user)
@@ -132,7 +151,9 @@ class CertificatScolariteListSerializer(serializers.ModelSerializer):
             return obj.date_traitement.strftime("%d/%m/%Y %H:%M")
         return None
 
-# 3. CHANGEMENT DE STATUT 
+# 3. CHANGEMENT DE STATUT
+
+
 class ChangerStatutCertificatSerializer(serializers.ModelSerializer):
     class Meta:
         model = CertificatScolarite

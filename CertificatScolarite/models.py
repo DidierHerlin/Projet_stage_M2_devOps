@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 
 
 class CertificatScolarite(models.Model):
@@ -17,12 +16,12 @@ class CertificatScolarite(models.Model):
         verbose_name="Étudiant"
     )
     nom_pere = models.CharField(
-        max_length=100, 
+        max_length=100,
         verbose_name="Nom du père",
         default="Non spécifié"
-    ) 
+    )
     nom_mere = models.CharField(
-        max_length=100, 
+        max_length=100,
         verbose_name="Nom de la mère",
         default="Non spécifiée"
     )
@@ -52,11 +51,12 @@ class CertificatScolarite(models.Model):
         ('pret', 'Prêt à retirer'),
     ]
     statut = models.CharField(
-        max_length=15, 
-        choices=STATUT_CHOICES, 
+        max_length=15,
+        choices=STATUT_CHOICES,
         default='en_attente',
         verbose_name="Statut de la demande"
     )
+
     def save(self, *args, **kwargs):
         if not self.id_certificat:
             dernier = CertificatScolarite.objects.order_by('-id').first()

@@ -10,14 +10,14 @@ from api.models import Etudiant
 from .models import CertificatScolarite
 from .serializers import (
     CertificatScolariteCreateSerializer,
-    CertificatScolariteListSerializer,
-    ChangerStatutCertificatSerializer
+    CertificatScolariteListSerializer
 )
 
 
 # 1. Créer une demande (étudiant)
 class CreerCertificatView(APIView):
     permission_classes = [IsAuthenticated]
+
     def post(self, request):
         if request.user.role != 'etudiant':
             return Response(
@@ -39,16 +39,17 @@ class CreerCertificatView(APIView):
             data['lieu_naissance'] = ""
         serializer = CertificatScolariteCreateSerializer(data=data)
         if serializer.is_valid():
-            certificat = serializer.save()            
+            certificat = serializer.save()
             self.envoyer_email_confirmation(certificat)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def envoyer_email_confirmation(self, certificat):
         user = certificat.etudiant.user
         nom_complet = f"{user.nom} {user.prenoms}".strip()
-        
-        sujet = f"Confirmation de demande de certificat - {certificat.id_certificat}"
+
+        sujet = f"Confirmation de demande de certificat - {
+            certificat.id_certificat}"
         message = f"""
         Bonjour {nom_complet},
 
@@ -65,13 +66,14 @@ class CreerCertificatView(APIView):
         Cordialement,
         Le service de la scolarité
         """
-        
+
         try:
             send_mail(
                 subject=sujet,
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL or 'scolarite@ecole.com',
-                recipient_list=[user.email],
+                recipient_list=[
+                    user.email],
                 fail_silently=True,
             )
         except Exception as e:
@@ -96,22 +98,24 @@ class MesCertificatsView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         certificats = CertificatScolarite.objects.filter(
-            etudiant=etudiant
-        ).select_related('etudiant', 'etudiant__user').order_by('-date_demande')
-        serializer = CertificatScolariteListSerializer(certificats, many=True)        
+            etudiant=etudiant).select_related(
+            'etudiant', 'etudiant__user').order_by('-date_demande')
+        serializer = CertificatScolariteListSerializer(certificats, many=True)
         stats = {
             'total': certificats.count(),
             'en_attente': certificats.filter(statut='en_attente').count(),
             'en_cours': certificats.filter(statut='en_cours').count(),
             'pret': certificats.filter(statut='pret').count(),
         }
-        
+
         return Response({
             "statistiques": stats,
             "certificats": serializer.data
         }, status=status.HTTP_200_OK)
 
 # 3. Liste pour scolarité
+
+
 class ListeCertificatsScolariteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -123,24 +127,26 @@ class ListeCertificatsScolariteView(APIView):
             )
         statut = request.query_params.get('statut')
         date_debut = request.query_params.get('date_debut')
-        date_fin = request.query_params.get('date_fin')        
+        date_fin = request.query_params.get('date_fin')
         queryset = CertificatScolarite.objects.select_related(
             'etudiant', 'etudiant__user'
         ).order_by('-date_demande')
-        
+
         if statut and statut in dict(CertificatScolarite.STATUT_CHOICES):
             queryset = queryset.filter(statut=statut)
-        
+
         if date_debut:
             try:
-                date_obj = timezone.datetime.strptime(date_debut, '%Y-%m-%d').date()
+                date_obj = timezone.datetime.strptime(
+                    date_debut, '%Y-%m-%d').date()
                 queryset = queryset.filter(date_demande__date__gte=date_obj)
             except ValueError:
                 pass
-        
+
         if date_fin:
             try:
-                date_obj = timezone.datetime.strptime(date_fin, '%Y-%m-%d').date()
+                date_obj = timezone.datetime.strptime(
+                    date_fin, '%Y-%m-%d').date()
                 queryset = queryset.filter(date_demande__date__lte=date_obj)
             except ValueError:
                 pass
@@ -152,7 +158,7 @@ class ListeCertificatsScolariteView(APIView):
             'en_cours': queryset.filter(statut='en_cours').count(),
             'pret': queryset.filter(statut='pret').count(),
         }
-        
+
         return Response({
             "statistiques": stats,
             "nombre_resultats": total,
@@ -171,27 +177,29 @@ class ChangerStatutCertificatView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
         certificat = get_object_or_404(
-            CertificatScolarite.objects.select_related('etudiant', 'etudiant__user'),
-            pk=pk
-        )
+            CertificatScolarite.objects.select_related(
+                'etudiant', 'etudiant__user'), pk=pk)
         nouveau_statut = request.data.get('statut')
         if not nouveau_statut:
             return Response(
                 {"erreur": "Le champ 'statut' est obligatoire."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        statuts_valides = [choice[0] for choice in CertificatScolarite.STATUT_CHOICES]
+        statuts_valides = [choice[0]
+                           for choice in CertificatScolarite.STATUT_CHOICES]
         if nouveau_statut not in statuts_valides:
             return Response({
                 "erreur": f"Statut invalide. Statuts autorisés: {', '.join(statuts_valides)}"
             }, status=status.HTTP_400_BAD_REQUEST)
-        ancien_statut = certificat.get_statut_display()        
-        certificat.statut = nouveau_statut        
-        if nouveau_statut in ['pret', 'retire', 'rejete'] and not certificat.date_traitement:
+        ancien_statut = certificat.get_statut_display()
+        certificat.statut = nouveau_statut
+        if nouveau_statut in ['pret', 'retire',
+                              'rejete'] and not certificat.date_traitement:
             certificat.date_traitement = timezone.now()
-        
-        certificat.save()        
-        email_envoye = self.envoyer_email_notification(certificat, ancien_statut)        
+
+        certificat.save()
+        email_envoye = self.envoyer_email_notification(
+            certificat, ancien_statut)
         response_data = {
             "success": True,
             "message": "Statut mis à jour avec succès",
@@ -209,13 +217,13 @@ class ChangerStatutCertificatView(APIView):
             },
             "email_envoye": email_envoye
         }
-        
+
         return Response(response_data, status=status.HTTP_200_OK)
 
     def envoyer_email_notification(self, certificat, ancien_statut):
         """Envoi un email de notification lors du changement de statut"""
         user = certificat.etudiant.user
-        nom_complet = f"{user.nom} {user.prenoms}".strip()        
+        nom_complet = f"{user.nom} {user.prenoms}".strip()
         messages = {
             'en_cours': {
                 "sujet": f"Votre certificat {certificat.id_certificat} est en traitement",
@@ -235,10 +243,10 @@ class ChangerStatutCertificatView(APIView):
                     Cordialement,
                     Le service de la scolarité
                     """
-                                },
-                                'pret': {
-                                    "sujet": f"Votre certificat {certificat.id_certificat} est prêt !",
-                                    "contenu": f"""
+            },
+            'pret': {
+                "sujet": f"Votre certificat {certificat.id_certificat} est prêt !",
+                "contenu": f"""
                     Bonjour {nom_complet},
 
                     Votre certificat de scolarité est maintenant prêt à être retiré !
@@ -256,10 +264,10 @@ class ChangerStatutCertificatView(APIView):
                     Cordialement,
                     Le service de la scolarité
                     """
-                                },
-                                'en_attente': {
-                                    "sujet": f"Mise à jour de votre demande {certificat.id_certificat}",
-                                    "contenu": f"""
+            },
+            'en_attente': {
+                "sujet": f"Mise à jour de votre demande {certificat.id_certificat}",
+                "contenu": f"""
                     Bonjour {nom_complet},
 
                     Le statut de votre demande de certificat a été modifié.
@@ -276,7 +284,7 @@ class ChangerStatutCertificatView(APIView):
                     """
             }
         }
-        
+
         # Message par défaut
         message_info = messages.get(certificat.statut, {
             "sujet": f"Mise à jour de votre demande {certificat.id_certificat}",
@@ -295,13 +303,14 @@ class ChangerStatutCertificatView(APIView):
             Le service de la scolarité
             """
         })
-        
+
         try:
             send_mail(
                 subject=message_info["sujet"],
                 message=message_info["contenu"],
                 from_email=settings.DEFAULT_FROM_EMAIL or 'scolarite@ecole.com',
-                recipient_list=[user.email],
+                recipient_list=[
+                    user.email],
                 fail_silently=True,
             )
             return True
