@@ -5,10 +5,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django.conf import settings
-from django.db import transaction
 
 from api.models import Etudiant
 from .models import ReleveNote
@@ -16,6 +13,7 @@ from .serializers import ReleveNoteCreateSerializer, ReleveNoteListSerializer
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class CreerDemandeReleveView(APIView):
     permission_classes = [IsAuthenticated]
@@ -48,7 +46,7 @@ class CreerDemandeReleveView(APIView):
         return Response({"erreur": "Données invalides", "details": serializer.errors}, status=400)
 
 
-#Afficher demandes de l'etudiant connecté
+# Afficher demandes de l'etudiant connecté
 class MesDemandesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -69,7 +67,7 @@ class MesDemandesView(APIView):
         })
 
 
-#Special scolarité: lister toutes les demandes
+# Special scolarité: lister toutes les demandes
 class ListeDemandesScolariteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -85,8 +83,7 @@ class ListeDemandesScolariteView(APIView):
         })
 
 
-
-# 4.DÉTAIL D'UNE DEMANDE
+# 4. DÉTAIL D'UNE DEMANDE
 class DetailDemandeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -108,9 +105,7 @@ class DetailDemandeView(APIView):
         return Response(serializer.data)
 
 
-# 5. MODIFIER LE STATUT → SCOLARITÉ UNIQUEMENT
-
-
+# 5. MODIFIER LE STATUT -> SCOLARITÉ UNIQUEMENT
 # VALIDER LA DEMANDE
 class ValiderDemandeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -213,8 +208,8 @@ class RejeterDemandeView(APIView):
             "motif": motif
         })
 
-class EtudiantParNumeroReleveView(APIView):
 
+class EtudiantParNumeroReleveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id_releve):
@@ -242,7 +237,7 @@ class EtudiantParNumeroReleveView(APIView):
         return Response({
             "success": True,
             "numero_releve": demande.id_releve,
-            "etat_actuel": statut_simple,  
+            "etat_actuel": statut_simple,
 
             "etudiant": {
                 "immatricule": etudiant.immatricule,
@@ -258,4 +253,4 @@ class EtudiantParNumeroReleveView(APIView):
                 "date_demande": demande.date_demande.strftime("%d/%m/%Y à %H:%M"),
                 "statut_detaille": demande.get_statut_display()
             }
-        }, status=status.HTTP_200_OK) 
+        }, status=status.HTTP_200_OK)
