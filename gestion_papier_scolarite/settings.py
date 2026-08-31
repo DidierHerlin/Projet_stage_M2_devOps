@@ -141,12 +141,12 @@ REST_FRAMEWORK = {
 # DATABASE (SQLite TEMPORAIRE)
 # ==============================
 DATABASES = {
-     'default': {
+    'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('MYSQL_DATABASE', default='ecole_db'),
-        'USER': config('MYSQL_USER', default='ecole_user'),
-        'PASSWORD': config('MYSQL_PASSWORD', default='secret123'),
-        'HOST': config('DB_HOST', default='db'),
+        'NAME': config('DB_NAME', default='ecole_db'),
+        'USER': config('DB_USER', default='ecole_user'),
+        'PASSWORD': config('DB_PASSWORD', default='secret123'),
+        'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='3306'),
     }
 }
