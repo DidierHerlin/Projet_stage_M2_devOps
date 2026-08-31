@@ -20,12 +20,14 @@ class CreerDemandeReleveView(APIView):
 
     def post(self, request):
         if request.user.role != 'etudiant':
-            return Response({"erreur": "Seuls les étudiants peuvent créer une demande."}, status=403)
+            return Response(
+                {"erreur": "Seuls les étudiants peuvent créer une demande."}, status=403)
 
         try:
             etudiant = Etudiant.objects.get(user=request.user)
         except Etudiant.DoesNotExist:
-            return Response({"erreur": "Profil étudiant manquant."}, status=403)
+            return Response(
+                {"erreur": "Profil étudiant manquant."}, status=403)
 
         data = request.data.copy()
         data['etudiant'] = etudiant.id
@@ -43,7 +45,8 @@ class CreerDemandeReleveView(APIView):
                 "date": demande.date_demande.strftime("%d/%m/%Y %H:%M")
             }, status=201)
 
-        return Response({"erreur": "Données invalides", "details": serializer.errors}, status=400)
+        return Response({"erreur": "Données invalides",
+                        "details": serializer.errors}, status=400)
 
 
 # Afficher demandes de l'etudiant connecté
@@ -52,14 +55,17 @@ class MesDemandesView(APIView):
 
     def get(self, request):
         if request.user.role != 'etudiant':
-            return Response({"erreur": "Accès réservé aux étudiants."}, status=403)
+            return Response(
+                {"erreur": "Accès réservé aux étudiants."}, status=403)
 
         try:
             etudiant = Etudiant.objects.get(user=request.user)
         except Etudiant.DoesNotExist:
-            return Response({"erreur": "Profil étudiant manquant."}, status=403)
+            return Response(
+                {"erreur": "Profil étudiant manquant."}, status=403)
 
-        demandes = ReleveNote.objects.filter(etudiant=etudiant).order_by('-date_demande')
+        demandes = ReleveNote.objects.filter(
+            etudiant=etudiant).order_by('-date_demande')
         serializer = ReleveNoteListSerializer(demandes, many=True)
         return Response({
             "total": demandes.count(),
@@ -75,7 +81,8 @@ class ListeDemandesScolariteView(APIView):
         if request.user.role != 'scolarite':
             return Response({"erreur": "Réservé à la scolarité."}, status=403)
 
-        demandes = ReleveNote.objects.select_related('etudiant__user').order_by('-date_demande')
+        demandes = ReleveNote.objects.select_related(
+            'etudiant__user').order_by('-date_demande')
         serializer = ReleveNoteListSerializer(demandes, many=True)
         return Response({
             "total": demandes.count(),
@@ -96,7 +103,8 @@ class DetailDemandeView(APIView):
                 if demande.etudiant != etudiant:
                     return Response({"erreur": "Accès refusé."}, status=403)
             except Etudiant.DoesNotExist:
-                return Response({"erreur": "Profil étudiant manquant."}, status=403)
+                return Response(
+                    {"erreur": "Profil étudiant manquant."}, status=403)
 
         elif request.user.role != 'scolarite':
             return Response({"erreur": "Accès refusé."}, status=403)
@@ -114,10 +122,12 @@ class ValiderDemandeView(APIView):
         if request.user.role != 'scolarite':
             return Response({"erreur": "Réservé à la scolarité."}, status=403)
 
-        demande = get_object_or_404(ReleveNote, pk=pk)  # Recherche par ID (pas id_releve)
+        # Recherche par ID (pas id_releve)
+        demande = get_object_or_404(ReleveNote, pk=pk)
 
         if demande.statut in ['pret', 'retire']:
-            return Response({"erreur": "Cette demande est déjà validée ou retirée."}, status=400)
+            return Response(
+                {"erreur": "Cette demande est déjà validée ou retirée."}, status=400)
 
         demande.statut = 'pret'
         demande.date_traitement = timezone.now()
@@ -171,7 +181,8 @@ class RejeterDemandeView(APIView):
         demande = get_object_or_404(ReleveNote, pk=pk)
 
         if demande.statut == 'rejete':
-            return Response({"erreur": "Cette demande est déjà rejetée."}, status=400)
+            return Response(
+                {"erreur": "Cette demande est déjà rejetée."}, status=400)
 
         motif = request.data.get('motif', 'Non précisé')
 

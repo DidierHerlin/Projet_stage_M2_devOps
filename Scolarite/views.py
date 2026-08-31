@@ -1,21 +1,16 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import datetime, timedelta
-from api.models import Etudiant
 from releveNote.models import ReleveNote
 from CertificatScolarite.models import CertificatScolarite
 from Attestation.models import Attestation
-
-
 # 1. TABLEAU DE BORD UNIFIÉ - SCOLARITÉ UNIQUEMENT
+
 
 class ToutesLesDemandesScolariteView(APIView):
     permission_classes = [IsAuthenticated]
@@ -26,16 +21,13 @@ class ToutesLesDemandesScolariteView(APIView):
                 "erreur": "Accès refusé. Réservé à la scolarité.",
                 "votre_role": request.user.role
             }, status=status.HTTP_403_FORBIDDEN)
-
         statut_filter = request.query_params.get('statut', None)
         type_filter = request.query_params.get('type', None)
         date_debut = request.query_params.get('date_debut', None)
         date_fin = request.query_params.get('date_fin', None)
         demandes_unifiees = []
-
         # 1. RELEVÉS DE NOTES
         releves = ReleveNote.objects.select_related('etudiant__user').all()
-        
         if statut_filter:
             releves = releves.filter(statut=statut_filter)
         if date_debut:
@@ -44,14 +36,14 @@ class ToutesLesDemandesScolariteView(APIView):
                 releves = releves.filter(date_demande__date__gte=date_obj)
             except ValueError:
                 pass
-        
+
         if date_fin:
             try:
                 date_obj = datetime.strptime(date_fin, '%Y-%m-%d').date()
                 releves = releves.filter(date_demande__date__lte=date_obj)
             except ValueError:
                 pass
-        
+
         for releve in releves:
             demandes_unifiees.append({
                 'id': releve.id,
@@ -74,24 +66,27 @@ class ToutesLesDemandesScolariteView(APIView):
                 'date_traitement': releve.date_traitement.strftime("%d/%m/%Y %H:%M") if releve.date_traitement else None
             })
 
-        certificats = CertificatScolarite.objects.select_related('etudiant__user').all()
-        
+        certificats = CertificatScolarite.objects.select_related(
+            'etudiant__user').all()
+
         if statut_filter:
             certificats = certificats.filter(statut=statut_filter)
         if date_debut:
             try:
                 date_obj = datetime.strptime(date_debut, '%Y-%m-%d').date()
-                certificats = certificats.filter(date_demande__date__gte=date_obj)
+                certificats = certificats.filter(
+                    date_demande__date__gte=date_obj)
             except ValueError:
                 pass
-        
+
         if date_fin:
             try:
                 date_obj = datetime.strptime(date_fin, '%Y-%m-%d').date()
-                certificats = certificats.filter(date_demande__date__lte=date_obj)
+                certificats = certificats.filter(
+                    date_demande__date__lte=date_obj)
             except ValueError:
                 pass
-        
+
         for cert in certificats:
             demandes_unifiees.append({
                 'id': cert.id,
@@ -106,7 +101,8 @@ class ToutesLesDemandesScolariteView(APIView):
                 'details': {
                     'nom_pere': cert.nom_pere,
                     'nom_mere': cert.nom_mere,
-                    'date_naissance': cert.date_naissance.strftime("%Y-%m-%d") if cert.date_naissance else None,  # AJOUTÉ
+                    # AJOUTÉ
+                    'date_naissance': cert.date_naissance.strftime("%Y-%m-%d") if cert.date_naissance else None,
                     'lieu_naissance': cert.lieu_naissance,  # AJOUTÉ
                     'quantite': cert.quantite
                 },
@@ -116,27 +112,31 @@ class ToutesLesDemandesScolariteView(APIView):
                 'date_traitement': cert.date_traitement.strftime("%d/%m/%Y %H:%M") if cert.date_traitement else None
             })
 
-        # 3. ATTESTATIONS (CORRIGÉ - avec annee_scolaire au lieu de annee_universitaire)
-        attestations = Attestation.objects.select_related('etudiant__user').all()
-        
+        # 3. ATTESTATIONS (CORRIGÉ - avec annee_scolaire au lieu de
+        # annee_universitaire)
+        attestations = Attestation.objects.select_related(
+            'etudiant__user').all()
+
         if statut_filter:
             attestations = attestations.filter(statut=statut_filter)
-        
+
         # Filtre par date
         if date_debut:
             try:
                 date_obj = datetime.strptime(date_debut, '%Y-%m-%d').date()
-                attestations = attestations.filter(date_demande__date__gte=date_obj)
+                attestations = attestations.filter(
+                    date_demande__date__gte=date_obj)
             except ValueError:
                 pass
-        
+
         if date_fin:
             try:
                 date_obj = datetime.strptime(date_fin, '%Y-%m-%d').date()
-                attestations = attestations.filter(date_demande__date__lte=date_obj)
+                attestations = attestations.filter(
+                    date_demande__date__lte=date_obj)
             except ValueError:
                 pass
-        
+
         for att in attestations:
             demandes_unifiees.append({
                 'id': att.id,
@@ -151,7 +151,8 @@ class ToutesLesDemandesScolariteView(APIView):
                 'details': {
                     'type_attestation': att.type_attestation,
                     'type_display': att.get_type_attestation_display(),
-                    'annee_scolaire': att.annee_scolaire,  # CORRIGÉ : annee_scolaire au lieu de annee_universitaire
+                    # CORRIGÉ : annee_scolaire au lieu de annee_universitaire
+                    'annee_scolaire': att.annee_scolaire,
                     'quantite': att.quantite,  # CORRIGÉ : quantite au lieu de nombre_exemplaires
                     'prix': float(att.prix),
                     'total_paye': float(att.total_paye)
@@ -163,11 +164,15 @@ class ToutesLesDemandesScolariteView(APIView):
             })
 
         if type_filter:
-            demandes_unifiees = [d for d in demandes_unifiees if d['type_demande'] == type_filter]
+            demandes_unifiees = [
+                d for d in demandes_unifiees if d['type_demande'] == type_filter]
 
         try:
-            demandes_unifiees.sort(key=lambda x: datetime.strptime(x['date_demande'], "%d/%m/%Y %H:%M") 
-                                  if x['date_demande'] else datetime.min, reverse=True)
+            demandes_unifiees.sort(
+                key=lambda x: datetime.strptime(
+                    x['date_demande'],
+                    "%d/%m/%Y %H:%M") if x['date_demande'] else datetime.min,
+                reverse=True)
         except (ValueError, TypeError):
             demandes_unifiees.sort(key=lambda x: x['id'], reverse=True)
 
@@ -232,14 +237,32 @@ class ChangerStatutDemandeUnifieeView(APIView):
 
         try:
             if type_demande == 'releve':
-                demande = ReleveNote.objects.select_related('etudiant__user').get(id=demande_id)
-                statuts_valides = ['en_attente', 'en_cours', 'pret', 'retire', 'rejete']
+                demande = ReleveNote.objects.select_related(
+                    'etudiant__user').get(id=demande_id)
+                statuts_valides = [
+                    'en_attente',
+                    'en_cours',
+                    'pret',
+                    'retire',
+                    'rejete']
             elif type_demande == 'certificat':
-                demande = CertificatScolarite.objects.select_related('etudiant__user').get(id=demande_id)
-                statuts_valides = ['en_attente', 'en_cours', 'pret', 'retire', 'rejete']
+                demande = CertificatScolarite.objects.select_related(
+                    'etudiant__user').get(id=demande_id)
+                statuts_valides = [
+                    'en_attente',
+                    'en_cours',
+                    'pret',
+                    'retire',
+                    'rejete']
             elif type_demande == 'attestation':
-                demande = Attestation.objects.select_related('etudiant__user').get(id=demande_id)
-                statuts_valides = ['en_attente', 'en_cours', 'pret', 'retire', 'rejete']
+                demande = Attestation.objects.select_related(
+                    'etudiant__user').get(id=demande_id)
+                statuts_valides = [
+                    'en_attente',
+                    'en_cours',
+                    'pret',
+                    'retire',
+                    'rejete']
             else:
                 return Response({
                     "erreur": "Type de demande invalide",
@@ -261,10 +284,11 @@ class ChangerStatutDemandeUnifieeView(APIView):
             demande.statut = nouveau_statut
             if nouveau_statut in ['pret', 'retire', 'rejete']:
                 demande.date_traitement = timezone.now()
-            
+
             demande.save()
 
-            email_envoye = self._envoyer_notification(demande, type_demande, ancien_statut, nouveau_statut, motif)
+            email_envoye = self._envoyer_notification(
+                demande, type_demande, ancien_statut, nouveau_statut, motif)
 
             return Response({
                 "success": True,
@@ -294,7 +318,13 @@ class ChangerStatutDemandeUnifieeView(APIView):
         else:
             return demande.id_attestation
 
-    def _envoyer_notification(self, demande, type_demande, ancien_statut, nouveau_statut, motif):
+    def _envoyer_notification(
+            self,
+            demande,
+            type_demande,
+            ancien_statut,
+            nouveau_statut,
+            motif):
         try:
             user = demande.etudiant.user
             nom = f"{user.nom} {user.prenoms}".strip()
@@ -305,10 +335,9 @@ class ChangerStatutDemandeUnifieeView(APIView):
                 'certificat': 'certificat de scolarité',
                 'attestation': 'attestation'
             }
-            
+
             type_label = type_labels.get(type_demande, type_demande)
 
-           
             if nouveau_statut == 'pret':
                 sujet = f" Votre {type_label} {numero} est prêt !"
                 message = f"""Bonjour {nom},
@@ -386,7 +415,8 @@ class ChangerStatutDemandeUnifieeView(APIView):
                 subject=sujet,
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL or 'scolarite@ecole.com',
-                recipient_list=[user.email],
+                recipient_list=[
+                    user.email],
                 fail_silently=False,
             )
             return True
@@ -442,47 +472,62 @@ class StatistiquesScolariteView(APIView):
             )
 
         stats['demandes_recentes']['aujourdhui'] = (
-            ReleveNote.objects.filter(date_demande__date=aujourd_hui).count() +
-            CertificatScolarite.objects.filter(date_demande__date=aujourd_hui).count() +
-            Attestation.objects.filter(date_demande__date=aujourd_hui).count()
-        )
+            ReleveNote.objects.filter(
+                date_demande__date=aujourd_hui).count() +
+            CertificatScolarite.objects.filter(
+                date_demande__date=aujourd_hui).count() +
+            Attestation.objects.filter(
+                date_demande__date=aujourd_hui).count())
 
         stats['demandes_recentes']['cette_semaine'] = (
-            ReleveNote.objects.filter(date_demande__date__gte=debut_semaine).count() +
-            CertificatScolarite.objects.filter(date_demande__date__gte=debut_semaine).count() +
-            Attestation.objects.filter(date_demande__date__gte=debut_semaine).count()
-        )
+            ReleveNote.objects.filter(
+                date_demande__date__gte=debut_semaine).count() +
+            CertificatScolarite.objects.filter(
+                date_demande__date__gte=debut_semaine).count() +
+            Attestation.objects.filter(
+                date_demande__date__gte=debut_semaine).count())
 
         stats['demandes_recentes']['ce_mois'] = (
-            ReleveNote.objects.filter(date_demande__date__gte=debut_mois).count() +
-            CertificatScolarite.objects.filter(date_demande__date__gte=debut_mois).count() +
-            Attestation.objects.filter(date_demande__date__gte=debut_mois).count()
-        )
+            ReleveNote.objects.filter(
+                date_demande__date__gte=debut_mois).count() +
+            CertificatScolarite.objects.filter(
+                date_demande__date__gte=debut_mois).count() +
+            Attestation.objects.filter(
+                date_demande__date__gte=debut_mois).count())
 
         if stats['total_demandes'] > 0:
             pourcentages = {}
             for statut, count in stats['par_statut'].items():
-                pourcentages[statut] = round((count / stats['total_demandes']) * 100, 1)
+                pourcentages[statut] = round(
+                    (count / stats['total_demandes']) * 100, 1)
             stats['pourcentages_statut'] = pourcentages
 
         evolution = []
         for i in range(4):
-            debut = aujourd_hui - timedelta(days=aujourd_hui.weekday() + 7*i)
+            debut = aujourd_hui - timedelta(days=aujourd_hui.weekday() + 7 * i)
             fin = debut + timedelta(days=6)
-            
+
             total_semaine = (
-                ReleveNote.objects.filter(date_demande__date__range=[debut, fin]).count() +
-                CertificatScolarite.objects.filter(date_demande__date__range=[debut, fin]).count() +
-                Attestation.objects.filter(date_demande__date__range=[debut, fin]).count()
-            )
-            
+                ReleveNote.objects.filter(
+                    date_demande__date__range=[
+                        debut,
+                        fin]).count() +
+                CertificatScolarite.objects.filter(
+                    date_demande__date__range=[
+                        debut,
+                        fin]).count() +
+                Attestation.objects.filter(
+                    date_demande__date__range=[
+                        debut,
+                        fin]).count())
+
             evolution.append({
-                'semaine': f"Sem {4-i}",
+                'semaine': f"Sem {4 - i}",
                 'debut': debut.strftime("%d/%m"),
                 'fin': fin.strftime("%d/%m"),
                 'total': total_semaine
             })
-        
+
         evolution.reverse()
 
         return Response({
@@ -511,7 +556,7 @@ class RechercherDemandeParNumeroView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         numero = request.query_params.get('numero', '').strip()
-        
+
         if not numero:
             return Response({
                 "erreur": "Le paramètre 'numero' est requis",
@@ -525,7 +570,8 @@ class RechercherDemandeParNumeroView(APIView):
         resultats = []
 
         try:
-            releve = ReleveNote.objects.select_related('etudiant__user').get(id_releve__iexact=numero)
+            releve = ReleveNote.objects.select_related(
+                'etudiant__user').get(id_releve__iexact=numero)
             resultats.append({
                 'type': 'releve',
                 'id': releve.id,
@@ -547,7 +593,8 @@ class RechercherDemandeParNumeroView(APIView):
             pass
 
         try:
-            cert = CertificatScolarite.objects.select_related('etudiant__user').get(id_certificat__iexact=numero)
+            cert = CertificatScolarite.objects.select_related(
+                'etudiant__user').get(id_certificat__iexact=numero)
             resultats.append({
                 'type': 'certificat',
                 'id': cert.id,
@@ -569,7 +616,8 @@ class RechercherDemandeParNumeroView(APIView):
             pass
 
         try:
-            att = Attestation.objects.select_related('etudiant__user').get(id_attestation__iexact=numero)
+            att = Attestation.objects.select_related(
+                'etudiant__user').get(id_attestation__iexact=numero)
             resultats.append({
                 'type': 'attestation',
                 'id': att.id,
@@ -581,8 +629,8 @@ class RechercherDemandeParNumeroView(APIView):
                 },
                 'details': {
                     'type': att.get_type_attestation_display(),
-                    'annee_scolaire': att.annee_scolaire,  
-                    'quantite': att.quantite,  
+                    'annee_scolaire': att.annee_scolaire,
+                    'quantite': att.quantite,
                     'prix': float(att.prix),
                     'total_paye': float(att.total_paye)
                 },

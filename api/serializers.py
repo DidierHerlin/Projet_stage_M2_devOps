@@ -13,19 +13,19 @@ from django.contrib.auth.hashers import make_password, check_password
 class UserSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
     password = serializers.CharField(
-        write_only=True, 
-        required=True, 
+        write_only=True,
+        required=True,
         style={'input_type': 'password'}
     )
-    
+
     class Meta:
         model = User
         fields = [
-            'id', 
-            'email', 
-            'nom', 
-            'prenoms', 
-            'role', 
+            'id',
+            'email',
+            'nom',
+            'prenoms',
+            'role',
             'photo_profil',  # Champ pour l'upload
             'photo_url',     # URL pour l'affichage
             'is_active',
@@ -73,14 +73,14 @@ class UserSerializer(serializers.ModelSerializer):
 # ===================================================================
 class EtudiantSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    
+
     # Champs pour la création/écriture
     email = serializers.EmailField(write_only=True)
     nom = serializers.CharField(write_only=True)
     prenoms = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True, min_length=8)
     photo_profil = serializers.ImageField(write_only=True, required=False)
-    
+
     class Meta:
         model = Etudiant
         fields = [
@@ -99,13 +99,15 @@ class EtudiantSerializer(serializers.ModelSerializer):
     def validate_immatricule(self, value):
         """Valider l'immatricule"""
         if not value or len(value.strip()) == 0:
-            raise serializers.ValidationError("L'immatricule ne peut pas être vide.")
+            raise serializers.ValidationError(
+                "L'immatricule ne peut pas être vide.")
         return value.strip()
-    
+
     def validate_contact(self, value):
         """Valider le contact"""
         if not value or len(value.strip()) == 0:
-            raise serializers.ValidationError("Le contact ne peut pas être vide.")
+            raise serializers.ValidationError(
+                "Le contact ne peut pas être vide.")
         return value.strip()
 
     def create(self, validated_data):
@@ -133,24 +135,25 @@ class EtudiantSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Mettre à jour un étudiant"""
         # Champs directs de l'étudiant
-        instance.immatricule = validated_data.get('immatricule', instance.immatricule)
+        instance.immatricule = validated_data.get(
+            'immatricule', instance.immatricule)
         instance.contact = validated_data.get('contact', instance.contact)
         instance.save()
-        
+
         # Mettre à jour l'utilisateur si des données sont fournies
         user = instance.user
         user.nom = validated_data.get('nom', user.nom)
         user.prenoms = validated_data.get('prenoms', user.prenoms)
         user.email = validated_data.get('email', user.email)
-        
+
         if 'password' in validated_data:
             user.set_password(validated_data['password'])
-        
+
         if 'photo_profil' in validated_data:
             user.photo_profil = validated_data['photo_profil']
-        
+
         user.save()
-        
+
         return instance
 
 
@@ -159,14 +162,14 @@ class EtudiantSerializer(serializers.ModelSerializer):
 # ===================================================================
 class ScolariteSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    
+
     # Champs pour la création/écriture
     email = serializers.EmailField(write_only=True)
     nom = serializers.CharField(write_only=True)
     prenoms = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True, min_length=8)
     photo_profil = serializers.ImageField(write_only=True, required=False)
-    
+
     class Meta:
         model = Scolarite
         fields = [
@@ -219,13 +222,15 @@ class UpdateProfilePhotoSerializer(serializers.Serializer):
         """
         # Vérifier la taille (5 MB max)
         if value.size > 5 * 1024 * 1024:
-            raise serializers.ValidationError("La taille de l'image ne doit pas dépasser 5 MB")
-        
+            raise serializers.ValidationError(
+                "La taille de l'image ne doit pas dépasser 5 MB")
+
         # Vérifier le type de fichier
         allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
         if value.content_type not in allowed_types:
-            raise serializers.ValidationError("Format d'image non supporté. Utilisez JPG, PNG ou GIF")
-        
+            raise serializers.ValidationError(
+                "Format d'image non supporté. Utilisez JPG, PNG ou GIF")
+
         return value
 
 
@@ -241,17 +246,18 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     - Mot de passe (avec vérification de l'ancien)
     """
     current_password = serializers.CharField(write_only=True, required=False)
-    new_password = serializers.CharField(write_only=True, required=False, min_length=8)
+    new_password = serializers.CharField(
+        write_only=True, required=False, min_length=8)
     photo_profil = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = [
-            'nom', 
-            'prenoms', 
-            'email', 
-            'photo_profil', 
-            'current_password', 
+            'nom',
+            'prenoms',
+            'email',
+            'photo_profil',
+            'current_password',
             'new_password'
         ]
 
@@ -268,13 +274,13 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     "current_password": "Vous devez fournir le mot de passe actuel pour changer de mot de passe."
                 })
-            
+
             # Vérifier que le mot de passe actuel est correct
             if not check_password(current_password, user.password):
                 raise serializers.ValidationError({
                     "current_password": "Le mot de passe actuel est incorrect."
                 })
-            
+
             # Valider le nouveau mot de passe
             try:
                 validate_password(new_password, user)
@@ -282,7 +288,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     "new_password": list(e.messages)
                 })
-            
+
             # Hasher le nouveau mot de passe
             data['password'] = make_password(new_password)
 
@@ -317,7 +323,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     def validate_email(self, value):
         """Vérifier que l'email existe"""
         if not User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Aucun compte trouvé avec cet email.")
+            raise serializers.ValidationError(
+                "Aucun compte trouvé avec cet email.")
         return value
 
 
@@ -348,11 +355,11 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class UserSimpleSerializer(serializers.ModelSerializer):
     """Version simplifiée pour les listes"""
     photo_url = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = ['id', 'email', 'nom', 'prenoms', 'role', 'photo_url']
-    
+
     def get_photo_url(self, obj):
         request = self.context.get('request')
         if obj.photo_profil:
@@ -365,7 +372,7 @@ class UserSimpleSerializer(serializers.ModelSerializer):
 class EtudiantSimpleSerializer(serializers.ModelSerializer):
     """Version simplifiée pour les listes d'étudiants"""
     user = UserSimpleSerializer(read_only=True)
-    
+
     class Meta:
         model = Etudiant
         fields = ['id', 'user', 'immatricule', 'contact']

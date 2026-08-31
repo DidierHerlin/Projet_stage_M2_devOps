@@ -9,10 +9,22 @@ from .views import (
 urlpatterns = [
     # Étudiant
     path('creer/', CreerAttestationView.as_view(), name='creer_attestation'),
-    path('mes-attestations/', MesAttestationsView.as_view(), name='mes_attestations'),
-    
+    path(
+        'mes-attestations/',
+        MesAttestationsView.as_view(),
+        name='mes_attestations'),
+
     # Scolarité
-    path('liste/', ListeAttestationsScolariteView.as_view(), name='liste_attestations'),
-    path('<int:pk>/statut/', ChangerStatutAttestationView.as_view(), name='changer_statut'),
-    path('changer-statut/<int:pk>/', ChangerStatutAttestationView.as_view(), name='changer_statut_alt'),
+    path(
+        'liste/',
+        ListeAttestationsScolariteView.as_view(),
+        name='liste_attestations'),
+    path(
+        '<int:pk>/statut/',
+        ChangerStatutAttestationView.as_view(),
+        name='changer_statut'),
+    path(
+        'changer-statut/<int:pk>/',
+        ChangerStatutAttestationView.as_view(),
+        name='changer_statut_alt'),
 ]

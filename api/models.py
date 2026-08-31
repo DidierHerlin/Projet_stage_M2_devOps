@@ -9,7 +9,7 @@ from django.core.validators import FileExtensionValidator
 import os
 
 
-# ====================== FONCTION POUR LE CHEMIN DE L'IMAGE ======================
+# ====================== FONCTION POUR LE CHEMIN DE L'IMAGE ==============
 def user_profile_image_path(instance, filename):
     """
     Génère un chemin personnalisé pour les photos de profil
@@ -46,7 +46,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='etudiant')
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='etudiant')
     nom = models.CharField(max_length=100)
     prenoms = models.CharField(max_length=150)
 
@@ -55,9 +58,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         upload_to=user_profile_image_path,
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif'])],
-        help_text="Photo de profil (optionnel). Formats acceptés: JPG, PNG, GIF"
-    )
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[
+                    'jpg',
+                    'jpeg',
+                    'png',
+                    'gif'])],
+        help_text="Photo de profil (optionnel). Formats acceptés: JPG, PNG, GIF")
     # ===================================================
 
     is_active = models.BooleanField(default=True)
@@ -104,10 +112,12 @@ def rendre_scolarite_admin_complet(sender, instance, **kwargs):
 @receiver(post_save, sender=User)
 def log_creation_scolarite(sender, instance, created, **kwargs):
     if created and instance.role == 'scolarite':
-        print(f"\n✅ SCOLARITÉ CRÉÉE → {instance.email} | Accès admin activé !\n")
+        print(
+            f"\n✅ SCOLARITÉ CRÉÉE → {
+                instance.email} | Accès admin activé !\n")
 
 
-# ====================== SIGNAL POUR SUPPRIMER L'ANCIENNE PHOTO ======================
+# ====================== SIGNAL POUR SUPPRIMER L'ANCIENNE PHOTO ==========
 @receiver(pre_save, sender=User)
 def delete_old_profile_photo(sender, instance, **kwargs):
     """
@@ -130,9 +140,12 @@ def delete_old_profile_photo(sender, instance, **kwargs):
 
 # ====================== PROFILS ETUDIANT ======================
 class Etudiant(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profil_etudiant')
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profil_etudiant')
     immatricule = models.CharField(max_length=50, unique=True)
-    contact = models.CharField(max_length=20) 
+    contact = models.CharField(max_length=20)
 
     def __str__(self):
         return f"{self.immatricule} - {self.user.nom} {self.user.prenoms}"
@@ -144,7 +157,10 @@ class Etudiant(models.Model):
 
 # ====================== PROFILS SCOLARITE ======================
 class Scolarite(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profil_scolarite')
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profil_scolarite')
     fonction = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):

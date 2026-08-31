@@ -2,11 +2,9 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import os
-# import pymysql   # ❌ Inutile pour SQLite
 # pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 
 # ==============================
@@ -14,7 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ==============================
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1').split(',')
 
 # ==============================
 # CORS

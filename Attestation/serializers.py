@@ -19,7 +19,13 @@ class AttestationCreateSerializer(serializers.ModelSerializer):
             'annee_scolaire', 'quantite', 'prix', 'total_paye',
             'statut', 'date_demande'
         ]
-        read_only_fields = ['id', 'id_attestation', 'total_paye', 'statut', 'date_demande', 'prix']
+        read_only_fields = [
+            'id',
+            'id_attestation',
+            'total_paye',
+            'statut',
+            'date_demande',
+            'prix']
 
     def validate_type_attestation(self, value):
         types_valides = dict(Attestation.TYPE_ATTESTATION_CHOICES).keys()
@@ -34,27 +40,29 @@ class AttestationCreateSerializer(serializers.ModelSerializer):
             if not re.match(r'^\d{4}[-/]\d{4}$', value):
                 raise serializers.ValidationError(
                     "Format invalide. Attendu : 2024-2025 ou 2024/2025"
-                )            
+                )
             annees = re.split(r'[-/]', value)
             annee1, annee2 = int(annees[0]), int(annees[1])
-            
+
             if annee2 != annee1 + 1:
                 raise serializers.ValidationError(
                     f"Années incohérentes : {annee2} devrait être {annee1 + 1}"
                 )
-            
+
             if annee1 < 2000 or annee1 > 2100:
                 raise serializers.ValidationError(
                     f"Année hors limites : {annee1}"
                 )
-        
+
         return value
 
     def validate_quantite(self, value):
         if value < 1:
-            raise serializers.ValidationError("La quantité doit être au moins 1")
+            raise serializers.ValidationError(
+                "La quantité doit être au moins 1")
         if value > 10:
-            raise serializers.ValidationError("Maximum 10 exemplaires par demande")
+            raise serializers.ValidationError(
+                "Maximum 10 exemplaires par demande")
         return value
 
     def validate(self, data):
@@ -95,10 +103,14 @@ class AttestationCreateSerializer(serializers.ModelSerializer):
 
 
 class AttestationListSerializer(serializers.ModelSerializer):
-    etudiant_nom = serializers.CharField(source='etudiant.user.get_full_name', read_only=True)
-    immatricule = serializers.CharField(source='etudiant.immatricule', read_only=True)
-    type_display = serializers.CharField(source='get_type_attestation_display', read_only=True)
-    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+    etudiant_nom = serializers.CharField(
+        source='etudiant.user.get_full_name', read_only=True)
+    immatricule = serializers.CharField(
+        source='etudiant.immatricule', read_only=True)
+    type_display = serializers.CharField(
+        source='get_type_attestation_display', read_only=True)
+    statut_display = serializers.CharField(
+        source='get_statut_display', read_only=True)
 
     class Meta:
         model = Attestation
